@@ -17,7 +17,7 @@ COPY . .
 RUN R -e "install.packages(c( \
     'shiny','shinydashboard','bslib','leaflet','pool','glue','DBI','RPostgres', \
     'readxl','dplyr','sf','mapview','plotly','tidyr','jsonlite','colorspace', \
-    'shinyjs','DT','reactable','htmltools','purrr','lubridate','stringr','stringi','leafgl','rsconnect' \
+    'shinyjs','remotes','DT','reactable','htmltools','purrr','lubridate','stringr','stringi','leafgl','rsconnect' \
   ), repos='https://cloud.r-project.org/')"
 
 # Expose port 3838 (default Shiny Server)
