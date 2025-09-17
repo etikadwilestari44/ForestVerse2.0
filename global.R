@@ -13,7 +13,7 @@ library(sf)
 library(mapview)
 library(plotly)
 library(tidyr)
-library(jsonlite)l
+library(jsonlite)
 library(colorspace)
 library(shinyjs) # agar bisa menggunakan onclick
 library(remotes)
@@ -167,6 +167,3 @@ unit_terlibat_clean <- data_kegiatan$program_unit_terlibat |>
   trimws() |>
   unique() |>
   sort()
-
-options(shiny.host = "0.0.0.0")
-options(shiny.port = 38383)
