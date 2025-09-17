@@ -10,8 +10,11 @@ RUN apt-get update && apt-get install -y \
 # Set working directory di dalam container
 WORKDIR /srv/shiny-server/forestverse
 
-# Copy semua file project (ui.R, server.R, global.R, www/)
-COPY . .
+# copy app
+COPY . /srv/shiny-server/forestverse
+
+# copy shiny config
+COPY config/shiny-server.conf /etc/shiny-server/shiny-server.conf
 
 # Install package R (sesuaikan dengan library di global.R)
 RUN R -e "install.packages(c( \
