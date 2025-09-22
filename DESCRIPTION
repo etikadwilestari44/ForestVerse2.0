@@ -1,0 +1,38 @@
+Package      : ForestVerse
+Type         : R Project
+Title        : ForestVerse
+Version      : 0.2.0
+Authors@R Project:
+  person ( Etika Dwi Lestari
+           elestari@wcs.org
+           role = c("author", "credit"))
+Owner        : Conservation Evidence Unit
+Description  :
+  ForestVerse is a Shiny-based data platform developed by Conservation Evidence Unit (WCS-IP) to xxx 
+  multiple data (SMART Patrol, WRU, Farmer, Beneficiaries, Biodiversity and Restoration). It connects
+  PostgreSQL/PostGIS databases with R-based analytics and provides interactive dashboards, maps, and 
+  reports.
+License      : MIT + file LICENSE
+Encoding     : UTF-8
+LazyData     : TRUE
+Imports      : 
+  shiny (>= 1.11.1),
+  shinydashboard (>= 0.7.3),
+  bslib (>= 0.9.0),
+  leaflet (>= 2.2.3),
+  dplyr (>= 1.1.4),
+  DBI (>= 1.2.3),
+  RPostgres (>= 1.4.8),
+  sf (>= 1.0.21),
+  plotly (>= 4.11.0),
+  tidyr (>= 1.3.1),
+  lubridate (>= 1.9.4),
+  stringr (>= 1.5.2),
+  leafgl (>= 0.2.2),
+  DT (>= 0.34.0),
+  reactable (>= 0.4.4),
+  htmltools (>= 0.5.8.1),
+  purrr (>= 1.1.0),
+  shinyjs (>= 2.1.0)
+Depends :
+  R ( >= 4.3.3 (2024-02-29))
