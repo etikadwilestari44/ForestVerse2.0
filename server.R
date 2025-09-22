@@ -752,7 +752,8 @@ server <- function(input, output, session) {
                    div(style = "margin-bottom: 1rem;",
                        selectInput("lokasi", "📍 Pilih Nesting Ground",
                                    choices = unique(data_telur_maleo$ng_name),
-                                   selected = NULL)
+                                   selected = NULL,
+                                   multiple = TRUE)
                    )),
                  
                  layout_columns(
@@ -1089,7 +1090,7 @@ server <- function(input, output, session) {
   data_FilteredMaleo <- reactive({
     data_telur_maleo %>%
       filter(
-        ng_name == input$lokasi,
+        ng_name %in% input$lokasi,
         date_collect >= input$periode[1],
         date_collect <= input$periode[2]
       )
@@ -1560,7 +1561,7 @@ server <- function(input, output, session) {
   filtered_grid_maleo <- reactive({
     data_telur_per_grid %>%
       filter(
-        ng_name == input$lokasi,
+        ng_name %in% input$lokasi,
         date_collect >= input$periode[1],
         date_collect <= input$periode[2]
       ) %>%
@@ -1624,7 +1625,7 @@ server <- function(input, output, session) {
   filtered_temp_rain_maleo <- reactive({
     data_temp_rain %>%
       filter(
-        ng_name == input$lokasi,
+        ng_name %in% input$lokasi,
         date >= input$periode[1],
         date <= input$periode[2]
       )
