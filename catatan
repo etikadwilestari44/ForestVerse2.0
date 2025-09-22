@@ -1,0 +1,27 @@
+Pull Code to Github
+
+-- Step 1 : Cek container yang sedang berjalan
+sudo docker ps
+
+CONTAINER ID | IMAGE | COMMAND | CREATED | STATUS | PORTS
+
+-- Step 2 : Masuk ke container
+sudo docker exec -it forestverse_app bash
+
+-- Step 3 : Pastikan nama foleder project di dalam folder shiny-server
+ls /srv/shiny-server
+
+-- Step 4 : Masuk ke folder project
+cd /srv/shiny-server/forestverse
+
+-- Step 5 : Update code dari repo github
+git pull origin master
+
+-- Step 6 : Keluar dari folder project
+exit
+
+-- Step 7 : Restart container
+sudo docker restart foresrverse_app
+
+-- Step 8 : Test Ulang di browser
+https://16.78.151.169:3838/forestverse atau https://18.78.151.169:3838
