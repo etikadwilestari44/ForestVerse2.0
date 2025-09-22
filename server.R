@@ -751,7 +751,7 @@ server <- function(input, output, session) {
                    ),
                    div(style = "margin-bottom: 1rem;",
                        selectInput("lokasi", "📍 Pilih Nesting Ground",
-                                   choices = unique(data_telur_maleo$ng),
+                                   choices = unique(data_telur_maleo$ng_name),
                                    selected = NULL)
                    )),
                  
@@ -1089,7 +1089,7 @@ server <- function(input, output, session) {
   data_FilteredMaleo <- reactive({
     data_telur_maleo %>%
       filter(
-        ng == input$lokasi,
+        ng_name == input$lokasi,
         date_collect >= input$periode[1],
         date_collect <= input$periode[2]
       )
@@ -1239,7 +1239,7 @@ server <- function(input, output, session) {
         tahun = lubridate::year(date_collect),
         bulan = lubridate::month(date_collect)
       ) %>%
-      group_by(ng, tahun, bulan) %>%
+      group_by(ng_name, tahun, bulan) %>%
       summarise(
         jumlah_telur = n(),
         total_hari = lubridate::days_in_month(first(date_collect)),
@@ -1248,7 +1248,7 @@ server <- function(input, output, session) {
       )
     
     data_tahunan <- data_bulanan %>%
-      group_by(ng, tahun) %>%
+      group_by(ng_name, tahun) %>%
       summarise(
         jumlah_telur_per_tahun = sum(jumlah_telur, na.rm = TRUE),
         total_hari_per_tahun = sum(total_hari, na.rm = TRUE),
@@ -1560,11 +1560,11 @@ server <- function(input, output, session) {
   filtered_grid_maleo <- reactive({
     data_telur_per_grid %>%
       filter(
-        ng == input$lokasi,
+        ng_name == input$lokasi,
         date_collect >= input$periode[1],
         date_collect <= input$periode[2]
       ) %>%
-      group_by(field_grid, ng) %>%
+      group_by(field_grid, ng_name) %>%
       summarise(
         total_telur = sum(total_telur, na.rm = TRUE),
         geometry = st_union(st_as_sfc(geom)),
