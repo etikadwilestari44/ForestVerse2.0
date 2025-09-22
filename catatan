@@ -21,7 +21,44 @@ git pull origin master
 exit
 
 -- Step 7 : Restart container
-sudo docker restart foresrverse_app
+sudo docker restart forestverse_app
 
--- Step 8 : Test Ulang di browser
+-- Step 8 : Masuk ke folder Project
+cd /srv/shiny-server/forestverse
+
+-- Step 9 : Rebuild image di Docker
+sudo docker build -t forestverse_app .
+
+-- Step 10 : Stop docker
+sudo docker stop forestverse_app
+
+-- Step 11 : Remove container sebelumnya
+sudo docker rm forestverse_app
+
+-- Step 12 : Run container baru
+sudo docker run -d\
+--name forestverse_app \
+-p 3838:3838\
+forestverse_app
+
+-- Step 13 : Masuk ke container
+sudo docker exec -it forestverse_app bash
+
+-- Step 14 : Masuk ke folder project 
+cd /srv/shiny-serve/forestverse
+
+-- Step 15 : Masuk ke R
+R
+
+-- Ste 16 : Running Project
+shiny::runApp(".")
+
+-- Step 17 : Install Package
+1. Leaflet
+2. sf
+3. mapview
+4. leafgl
+
+
+-- Step 13 : Test Ulang di browser
 https://16.78.151.169:3838/forestverse atau https://18.78.151.169:3838

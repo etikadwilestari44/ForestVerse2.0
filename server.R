@@ -885,7 +885,6 @@ server <- function(input, output, session) {
                      plotlyOutput("barChartChickReleasedMaleo", height = "450px"))
                  ),
                  layout_columns(
-                   
                    ### UI:Biodiversitas:Page Maleo:Grafik Curah Hujan di Nesting Ground ####
                    card(
                      height = "500px",  
