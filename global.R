@@ -26,7 +26,9 @@ library(stringr)
 library(stringi)
 library(leafgl)
 library(rsconnect)
-
+library(kableExtra)
+library(xfun)
+library(shinyWidgets)
 
 ## Load Data ####
 koneksi_database <- dbPool(
@@ -66,21 +68,6 @@ data_batas_kph_aceh <- st_read(
   st_make_valid() %>%
   st_transform(4326)
 
-# Lahan Petani BBS
-data_polygon_petani_bbs <- st_read(
-  koneksi_database, 
-  query = "SELECT * FROM schema_spatial.t_sl_lahan_kopi_ofis_baseline_wgs84_ar")%>%
-  st_make_valid() %>%
-  st_transform(4326) %>%
-  st_cast("POLYGON")
-
-# Batas TN
-data_tamannasional <- st_read(
-  koneksi_database, 
-  query = "SELECT * FROM public.t_batas_tn")%>%
-  st_make_valid() %>%
-  st_transform(4326)
-
 # Data Tabular Patroli
 data_patroli <- st_read(
   koneksi_database,
@@ -103,7 +90,6 @@ head(data_patroli$geom)
 #### Pastikan geometri dibaca sebagai sf ####
 ipz_tnbbs_sf <- st_as_sf(data_batas_area_ipz_tnbbs, wkt = "geom", crs = 4326)
 batas_tamannasional_sf <- st_as_sf(data_tamannasional, wkt = "geom", crs = 4326)
-polygon_petani_bbs_sf <- st_as_sf(data_polygon_petani_bbs, wkt = "geom", crs = 4326)
 batas_kph_aceh_sf <- st_as_sf(data_batas_kph_aceh, wkt = "geom", crs = 4326)
 
 # Tabular Data Patroli
@@ -118,7 +104,6 @@ query_list <- list(
   data_gangguan_maleo = "SELECT * FROM schema_maleo.t_entry_threat",
   data_temp_rain = "SELECT * FROM schema_maleo.t_entry_temp_rain",
   data_telur_per_grid = "SELECT * FROM schema_maleo.view_jumlah_telur_per_grid_ar",
-  data_summary_total_petani = "SELECT * FROM schema_petani.view_summary_total_data_petani",
   data_kegiatan = "
     SELECT 
       jenis_kegiatan, judul_kegiatan, tanggal_mulai_kegiatan, tanggal_akhir_kegiatan,
@@ -132,9 +117,13 @@ query_list <- list(
            asal_instansi, posisi_jabatan
     FROM schema_kegiatan.t_peserta
     ORDER BY nama_peserta ASC",
+  data_summary_total_petani = "SELECT * FROM schema_petani.view_summary_total_data_petani",
   data_peserta_kegiatan = "SELECT * FROM schema_kegiatan.view_peserta_kegiatan",
-  data_petani = "SELECT * FROM schema_petani.view_raw_data_petani_forestseed ORDER BY id_petani DESC",
-  data_lahan_petani = "SELECT * FROM schema_petani.view_raw_data_lahan",
+  data_petani = "SELECT * FROM schema_petani.view_raw_data_petani ORDER BY id_petani DESC",
+  data_lahan_petani = "SELECT 
+  t.*,
+  ST_AsText(t.geom_polygon_lahan) AS geom_polygon_lahan_wkt,
+  ST_AsText(t.geom_point_lahan)   AS geom_point_lahan_wkt FROM schema_petani.view_raw_data_lahan t",
   data_kegiatan_training_gap = "SELECT * FROM schema_petani.view_raw_data_kegiatan_training",
   data_peserta_training_gap = "SELECT * FROM schema_petani.view_raw_data_peserta_training",
   data_petani_adopsi = "SELECT * FROM schema_petani.view_raw_data_petani_adopsi",
@@ -152,12 +141,63 @@ list2env(data_list, envir = .GlobalEnv)
 data_lahan_petani_terpetakan <- data_lahan_petani %>%
   filter(!is.na(longitude), !is.na(latitude))
 
-# 3. Ubah jadi objek sf (asumsi: proyeksi awal EPSG:32748 = UTM Zone 48S)
-sf_lahan_petani <- st_as_sf(data_lahan_petani_terpetakan, coords = c("longitude", "latitude"), crs = 32748)
+# Polygon lahan petani dari kolom geom_polygon_lahan
+polygon_petani_sf <- data_lahan_petani %>%
+  filter(!is.na(geom_polygon_lahan_wkt)) %>%
+  st_sf(
+    .,
+    geometry = st_as_sfc(.$geom_polygon_lahan_wkt, crs = 4326)
+  ) %>%
+  st_cast("POLYGON")   # pecah MULTIPOLYGON jadi POLYGON
 
-# 4. Transformasi ke WGS84 (EPSG:4326) agar bisa ditampilkan di leaflet
-sf_lahan_petani_wgs <- st_transform(sf_lahan_petani, crs = 4326)
 
+
+# Titik lahan petani dari kolom geom_point_lahan
+point_petani_sf <- data_lahan_petani %>%
+  filter(!is.na(geom_point_lahan_wkt)) %>%           # hanya yang ada WKT
+  st_sf(
+    .,
+    geometry = st_as_sfc(.$geom_point_lahan_wkt, crs = 4326)
+  )
+# Filter temuan kebun kopi & sawit
+data_kebun <- data_patroli %>%
+  select(
+    landscape,
+    patrol_id,
+    patrol_start_date,
+    patrol_end_date,
+    station,
+    patrol_transport_type,
+    waypoint_id,
+    waypoint_date,
+    waypoint_time,
+    x,
+    y,
+    geom,
+    geom_4326,
+    observation_category_1,
+    lokasi,
+    tipe_tutupan_lahan,
+    pelanggaran,
+    nama_pelaku,
+    nama_pelaku_indikatif,
+    asal,
+    umur,
+    jenis_kelamin,
+    jumlah_pelaku,
+    tindakan,
+    tipe_temuan,
+    usia_temuan,
+    keaktifan,
+    jumlah,
+    satuan,
+    keterangan
+  )%>%
+  dplyr::filter(
+    observation_category_1 == 'Penggunaan Kawasan',
+    landscape %in% c('Taman Nasional Bukit Barisan Selatan', 'Suaka Margasatwa Rawa Singkil'),
+    tipe_temuan %in% c('Kebun kopi', 'Kebun Sawit')
+  )
 
 poolClose(koneksi_database)
 

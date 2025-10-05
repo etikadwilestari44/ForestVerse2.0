@@ -91,14 +91,18 @@ server <- function(input, output, session) {
   })
   
   
-  # Petani - Layout main panel ####
-  # Navigasi internal di dalam section PETANI
-  observeEvent(input$go_to_data_petani, {
-    layout_state("layout_data_kegiatan_training")
+  # Petani - Layout main panel ====
+  
+  ## Link Button ke konten petani terlatih ====
+  observeEvent(input$go_to_data_petani_terlatih, {
+    layout_state("layout_data_petani_terlatih")
   })
-  observeEvent(input$go_to_data_lahan, {
-    layout_state("layout_data_lahan_petani")
+  
+  ## Link Button ke konten petani adopsi ====
+  observeEvent(input$go_to_data_petani_adopsi, {
+    layout_state("layout_data_petani_adopsi")
   })
+  
   observeEvent(input$goBackToPetani, {
     layout_state("PETANI")
   })
@@ -241,7 +245,7 @@ server <- function(input, output, session) {
     )
       
       ## UI:Petani ####
-    } else if (section == "PETANI") {
+    }else if (section == "PETANI") {
       switch(layout,
              "PETANI" = navset_tab(
                
@@ -336,11 +340,7 @@ server <- function(input, output, session) {
                                 tags$b("Sulut :"),
                                 tags$span(style = "margin-left: 5px;", textOutput("totalPetaniTerpetakanSulut"))
                        )
-                     ),
-                     actionLink(
-                       "go_to_data_lahan",
-                       "Lihat Detail Data",
-                       style = "font-weight: bold; color: #fff;")
+                     )
                    )),
                  
                  ## UI:Petani:Dashboard:ValueBox:Kegiatan Pelatihan GAP ####
@@ -370,7 +370,7 @@ server <- function(input, output, session) {
                        )
                      ),
                      actionLink(
-                       "go_to_data_petani",
+                       "go_to_data_kegiatan",
                        "Lihat Detail Data",
                        style = "font-weight: bold; color: #fff;")
                    ),
@@ -399,7 +399,11 @@ server <- function(input, output, session) {
                                 tags$b("Sulut :"),
                                 tags$span(style = "margin-left: 5px;", textOutput("totalPetaniTerlatihSulut"))
                        )
-                     )
+                     ),
+                     actionLink(
+                       "go_to_data_petani_terlatih",
+                       "Lihat Detail Data",
+                       style = "font-weight: bold; color: #fff;")
                    ),
                    
                    ## UI:Petani:Dashboard:ValueBox:Petani Adopsi ####
@@ -426,9 +430,14 @@ server <- function(input, output, session) {
                                 tags$b("Sulut :"),
                                 tags$span(style = "margin-left: 5px;", textOutput("totalPetaniAdopsiSulut"))
                        )
-                     )
+                     ),
+                     actionLink(
+                       "go_to_data_petani_adopsi",
+                       "Lihat Detail Data",
+                       style = "font-weight: bold; color: #fff;")
                    )
                  ),
+                 
                  ## UI:Petani:Dashboard:Grafik: Kumulatif Total Petani #### 
                  layout_columns(
                    card(
@@ -449,7 +458,8 @@ server <- function(input, output, session) {
                                  class="card-header-custom"), 
                      leafletOutput("mapLahanPetani", 
                                    height = "450px"))
-                 )),
+                 )
+               ),
                
                ## UI:Petani:Profile Petani ####
                nav_panel(
@@ -467,6 +477,25 @@ server <- function(input, output, session) {
                                      choices = data_petani$landscape,
                                      selected = NULL,
                                      multiple = TRUE)
+                     ),
+                     div(style = "margin-bottom: 1rem;",
+                         pickerInput(
+                           inputId = "kolom_petani",
+                           label   = "📑 Pilih Kolom yang Ditampilkan",
+                           choices = setNames(
+                             names(data_petani),
+                             gsub("_", " ", tools::toTitleCase(names(data_petani)))
+                           ) %>% 
+                             {.[names(.) == "tahun_lahir"] <- "Umur"; .},  # ubah label
+                           selected = c("id_petani","landscape", "nama_kelompok_tani", "nama_petani", "jenis_kelamin", "tahun_lahir"),
+                           multiple = TRUE,
+                           options = list(
+                             `actions-box` = TRUE,
+                             `live-search` = TRUE,
+                             size = 10
+                           ),
+                           width = "100%"
+                         )
                      )
                    ),
                    
@@ -476,6 +505,7 @@ server <- function(input, output, session) {
                    )
                    
                  )),
+               
                ## UI:Petani:Kegiatan Pelatihan ####
                nav_panel(
                  "Kegiatan",
@@ -497,15 +527,84 @@ server <- function(input, output, session) {
                                      choices = data_kegiatan_training_gap$landscape,
                                      selected = NULL,
                                      multiple = TRUE)
+                     ),
+                     div(style = "margin-bottom: 1rem;",
+                         selectInput("jenis_training_gap", "Pilih Jenis Training",
+                                     choices = data_kegiatan_training_gap$jenis_training,
+                                     selected = NULL,
+                                     multiple = TRUE)
+                     ),
+                     div(style = "margin-bottom: 1rem;",
+                         pickerInput(
+                           inputId = "kolom_kegiatan",
+                           label   = "📑 Pilih Kolom yang Ditampilkan",
+                           choices = setNames(
+                             names(data_kegiatan_training_gap),
+                             gsub("_", " ", tools::toTitleCase(names(data_kegiatan_training_gap)))
+                           ),
+                           selected = c("landscape", "tanggal_kegiatan", "jenis_training", "modul_training", "total_jumlah_peserta_training"),
+                           multiple = TRUE,
+                           options = list(
+                             `actions-box` = TRUE,
+                             `live-search` = TRUE,
+                             size = 10
+                           ),
+                           width = "100%"
+                         )
                      )
                    ),
                    
                    #### UI:Petani:Kegiatan Pelatihan:Tabel Kegiatan GAP ####
                    layout_columns(
-                     reactableOutput("tabel_kegiatan_gap")
+                     uiOutput("konten_kegiatan")
                    )
                  ))
-             )
+             ),
+             
+             
+             ## UI:Petani:Detail Petani Terlatih ####
+             "layout_data_petani_terlatih" = layout_columns(
+               layout_sidebar(
+                 width = 300,   # lebar sidebar (px)
+                 border = FALSE,
+                 sidebar = tagList(
+                   h4("Filter Data"),
+                   selectInput(
+                     "landscapePetaniTerlatih", 
+                     "Pilih Landscape", 
+                     choices = sort(unique(data_petani_training_per_modul$landscape)),
+                     multiple = TRUE,
+                     width = "100%"),
+                   actionButton("goBackToPetani", "⬅️ Kembali"),
+                 ),
+                 layout_columns(
+                   col_widths = c(12),
+                   reactableOutput("tabelPetaniTerlatih")
+                 )
+               )
+             ),
+             
+             ## UI:Petani:Detail Petani Adopsi ####
+             "layout_data_petani_adopsi" = layout_columns(
+               layout_sidebar(
+                 width = 300,   # lebar sidebar (px)
+                 border = FALSE,
+                 sidebar = tagList(
+                   h4("Filter Data"),
+                   selectInput(
+                     "landscapePetaniAdopsi", 
+                     "Pilih Landscape", 
+                     choices = sort(unique(data_petani_adopsi_per_modul$landscape)),
+                     multiple = TRUE,
+                     width = "100%"),   # isi penuh sidebar),
+                   actionButton("goBackToPetani", "⬅️ Kembali"),
+                 ),
+                 layout_columns(
+                   col_widths = c(12),   # pakai penuh untuk konten
+                   reactableOutput("tabelPetaniAdopsi")
+                   
+                 )
+               ))
       )
     } 
     
@@ -1946,7 +2045,10 @@ server <- function(input, output, session) {
   ## Server:Petani:Dashboard:ValueBox: Total Petani Dampingan ####
   output$totalPetaniDampingan <- renderText({
     jumlah_petaniDampinganbbs <- data_summary_total_petani %>%
-      filter(landscape == "BBS", grepl("SL", id_petani), keaktifan == TRUE) %>%
+      filter(
+        landscape == "BBS", 
+        grepl("SL", id_petani), 
+        keaktifan == TRUE) %>%
       distinct(id_petani) %>%
       nrow()
     
@@ -1968,7 +2070,10 @@ server <- function(input, output, session) {
   ### Server:Petani:Dashboard:renderText: BBS ####
   output$totalPetaniDampinganBBS <- renderText({
     jumlah <- data_summary_total_petani %>%
-      filter(landscape == "BBS", grepl("SL", id_petani), keaktifan == TRUE) %>%
+      filter(
+        landscape == "BBS", 
+        grepl("SL", id_petani), 
+        keaktifan == TRUE) %>%
       distinct(id_petani) %>%
       nrow()
     formatC(jumlah, format = "d", big.mark = ",")
@@ -1977,7 +2082,9 @@ server <- function(input, output, session) {
   ### Server:Petani:Dashboard:renderText: Singkil ####
   output$totalPetaniDampinganSingkil <- renderText({
     jumlah <- data_summary_total_petani %>%
-      filter(landscape == "Singkil", keaktifan == TRUE) %>%
+      filter(
+        landscape == "Singkil", 
+        keaktifan == TRUE) %>%
       nrow()
     formatC(jumlah, format = "d", big.mark = ",")
   })
@@ -1985,7 +2092,9 @@ server <- function(input, output, session) {
   ### Server:Petani:Dashboard:renderText: Sulut ####
   output$totalPetaniDampinganSulut <- renderText({
     jumlah <- data_summary_total_petani %>%
-      filter(landscape == "Sulut", keaktifan == TRUE) %>%
+      filter(
+        landscape == "Sulut", 
+        keaktifan == TRUE) %>%
       nrow()
     formatC(jumlah, format = "d", big.mark = ",")
   })
@@ -2002,7 +2111,9 @@ server <- function(input, output, session) {
   ### Server:Petani:Dashboard:renderText: BBS ####
   output$totalPetaniTerpetakanBBS <- renderText({
     jumlah <- data_summary_total_petani %>%
-      filter(landscape == "BBS", terpetakan == TRUE) %>%
+      filter(
+        landscape == "BBS", 
+        terpetakan == TRUE) %>%
       nrow()
     
     formatC(jumlah, format = "d", big.mark = ",")
@@ -2150,13 +2261,34 @@ server <- function(input, output, session) {
   ## Server:Petani:Dashboard:Chart Kumulatif Petani ----
   output$barChartPetaniKumulatif <- renderPlotly({
     
+    ## --- Data Petani Register ---
+    df_PetaniRegister <- data_petani %>%
+      select(
+        id_petani,
+        landscape,
+        tanggal_register,
+        kegiatan_intervensi
+      ) %>%
+      filter(
+        kegiatan_intervensi == 'Pelatihan GAP'
+      ) %>%
+      mutate(
+        tahun = year(tanggal_register),    # ambil tahun dari tanggal_register
+        kategori = "Register"              # tambahkan kolom kategori
+      ) %>%
+      group_by(landscape, tahun, kategori) %>%
+      summarise(jumlah = n_distinct(id_petani), .groups = "drop") %>%  # hitung jumlah petani unik per tahun
+      arrange(landscape, tahun) %>%
+      group_by(landscape, kategori) %>%
+      mutate(jumlah_kumulatif = cumsum(jumlah)) %>%
+      ungroup()
     
     
     ## --- Data Petani Terlatih ---
     df_Petaniterlatih <- data_kumulatif_data_peserta_training %>%
       mutate(
         tahun = as.integer(tahun_pertama),
-        jumlah = jumlah_petani_dampingan + jumlah_petani_nondampingan
+        jumlah = jumlah_petani_dampingan + jumlah_petani_nondampingan + jumlah_petani_lainnya
       ) %>%
       group_by(tahun, landscape) %>%
       summarise(jumlah = sum(jumlah, na.rm = TRUE), .groups = "drop") %>%
@@ -2181,60 +2313,93 @@ server <- function(input, output, session) {
       ungroup()
     
     ## --- Gabung kedua dataset ---
-    df_all_petani <- bind_rows(df_Petaniterlatih, df_Petaniadopsi)
+    df_all_petani <- bind_rows(df_Petaniterlatih, df_Petaniadopsi, df_PetaniRegister)
     
-    ## --- Plot ---
-    plot_ly(
-      data = df_all_petani,
-      x = ~tahun,
-      y = ~jumlah_kumulatif,
-      color = ~kategori,
-      colors = c("Terlatih" = "#1f77b4", "Adopsi" = "#ff7f0e"),
-      type = "bar",
-      transforms = list(
-        list(
-          type = 'filter',
-          target = ~landscape,
-          operation = '=',
-          value = unique(df_all_petani$landscape)[1]   # default landscape pertama
-        )
-      )
-    ) %>%
-      layout(
-        barmode = "group",
-        xaxis = list(title = "Tahun"),
-        yaxis = list(title = "Total Petani"),
-        legend = list(title = list(text = "Kategori")),
-        updatemenus = list(
-          list(
-            type = "dropdown",
-            active = 0,
-            buttons = lapply(unique(df_all_petani$landscape), function(ls) {
-              list(
-                method = "restyle",
-                args = list("transforms[0].value", ls),
-                label = ls
-              )
-            })
+    df_all_petani <- df_all_petani %>%
+      filter(!is.na(tahun)) %>%  # hilangkan NA tahun
+      group_by(landscape, tahun, kategori) %>%
+      summarise(jumlah_kumulatif = sum(jumlah_kumulatif, na.rm = TRUE), .groups = "drop") %>%
+      pivot_wider(
+        names_from = kategori,
+        values_from = jumlah_kumulatif,
+        values_fill = 0  # isi NA dengan 0
+      ) %>%
+      arrange(landscape, tahun)
+    
+    ## === Daftar landscape ===
+    landscape_list <- unique(df_all_petani$landscape)
+    
+    ## === Buat plot kosong ===
+    fig_all <- plot_ly()
+    
+    ## === Tambahkan trace per landscape ===
+    for (p in landscape_list) {
+      df_sub <- subset(df_all_petani, landscape == p)
+      
+      fig_all <- fig_all %>%
+        add_trace(
+          data = df_sub,
+          x = ~tahun, y = ~Register,
+          type = 'bar',
+          name = paste('Register'),
+          visible = ifelse(p == "BBS", TRUE, FALSE),
+          marker = list(
+            color = 'rgba(255, 105, 0, 0.8)'  # Pantone 151 cp
           )
-        )
+        ) %>%
+        add_trace(
+          data = df_sub,
+          x = ~tahun, y = ~Terlatih,
+          type = 'bar',
+          name = paste('Terlatih'),
+          visible = ifelse(p == "BBS", TRUE, FALSE),
+          marker = list(color = 'rgba(206, 220, 0, 0.8)') #Pantone 380 C
+        ) %>%
+        add_trace(
+          data = df_sub,
+          x = ~tahun, y = ~Adopsi,
+          type = 'bar',
+          name = paste('Adopsi'),
+          visible = ifelse(p == "BBS", TRUE, FALSE),
+          marker = list(color = 'rgba(0, 175, 172, 0.8)' #Pantone 2362 CP
+          )
+        ) 
+    }
+    
+    ## === Dropdown interaktif ===
+    fig_all <- fig_all %>%
+      layout(
+        barmode = "group",  # <— ini yang membuat bar berdampingan
+        updatemenus = list(list(
+          buttons = lapply(landscape_list, function(p) {
+            list(
+              method = "update",
+              args = list(
+                list(visible = unlist(lapply(landscape_list, function(x) rep(x == p, 3))))
+              ),
+              label = p
+            )
+          }),
+          direction = "down",
+          x = 0.1,
+          y = 1.15,
+          showactive = TRUE
+        )),
+        xaxis = list(title = "Tahun"),
+        yaxis = list(title = "Jumlah Petani"),
+        legend = list(title = list(text = "Kategori"))
       )
+    
+    fig_all
+    
   })
   
   
   ## Server:Petani:Dashboard:Map: Lahan Petani Terpetakan ####
   output$mapLahanPetani <- renderLeaflet({
-    
     leaflet() %>%
       addTiles() %>%
       setView(lng = 104.3515884, lat = -5.4484732, zoom = 10) %>%
-      
-      # Lokasi administrasi
-      # addGlPolygons(
-      #   data = st_cast(lokasi_adm_sf, "POLYGON"),
-      #   fillColor = "gray", weight = 1, fillOpacity = 0.3,
-      #   group = "Wilayah Administrasi"
-      # ) %>%
       
       # Batas resor Taman Nasional
       addGlPolygons(
@@ -2250,35 +2415,53 @@ server <- function(input, output, session) {
         group = "IPZ TNBBS"
       ) %>%
       
-      # Polygon lahan petani
+      # Polygon lahan
       addGlPolygons(
-        data = st_cast(polygon_petani_bbs_sf, "POLYGON"),
+        data = polygon_petani_sf,
         fillColor = "#253494", weight = 2, fillOpacity = 0.5,
-        group = "Polygon Petani TNBBS"
+        group = "Polygon Lahan Petani",
+        popup = ~paste0(
+          "<b>ID Lahan:</b> ", id_lahan, "<br/>",
+          "<b>Luas (ha):</b> ", luas_lahan_ha, "<br/>",
+          "<b>Desa:</b> ", desa
+        )
       ) %>%
       
-      # Titik lahan petani
+      # Titik lahan Petani
       addGlPoints(
-        data = sf_lahan_petani_wgs,
+        data = point_petani_sf,
         fillColor = "#993404", radius = 4,
         group = "Titik Petani",
         popup = ~paste0(
           "<b> Nama Petani :</b>", nama_petani, "<br/>",
-          "<b> Lahan ke : <b/>", hamparan_ke, "<br/>",
-          "<b> Luas Lahan : <b/>", luas_lahan_ha, "<br/>",
-          "<b> Tahun Penanaman : <b/>", tahun_penanaman, "<br/>",
-          "<b> Site : <b/>", landscape, "<br/>",
-          "<b> Lokasi : <b/>", desa, "<br/>"
+          "<b> Lahan ke :</b> ", hamparan_ke, "<br/>",
+          "<b> Luas Lahan :</b> ", luas_lahan_ha, " ha<br/>",
+          "<b> Tahun Penanaman :</b> ", tahun_penanaman, "<br/>",
+          "<b> Site :</b> ", landscape, "<br/>",
+          "<b> Lokasi :</b> ", desa
+        )
+      ) %>%
+      
+      # Titik temuan kebun kopi/sawit dari patroli
+      addGlPoints(
+        data = data_kebun,
+        fillColor = "#ff7f0e", radius = 6,
+        group = "Temuan Kebun",
+        popup = ~paste0(
+          "<b>Tipe Temuan :</b> ", tipe_temuan, "<br/>",
+          "<b>Tanggal :</b> ", patrol_start_date, "<br/>",
+          "<b>Landscape :</b> ", landscape, "<br/>",
+          "<b>Nama Pelaku :</b> ",nama_pelaku, "<br/>",
+          "<b>Nama Pelaku Indikatif :</b> ",nama_pelaku_indikatif, "<br/>"
         )
       ) %>%
       
       # Kontrol layer
       addLayersControl(
         overlayGroups = c(
-          "Wilayah Administrasi",
-          "IPZ TNBBS",
           "Polygon Petani TNBBS",
-          "Titik Petani"
+          "Titik Petani",
+          "Temuan Kebun"
         ),
         options = layersControlOptions(collapsed = FALSE)
       )
@@ -2289,12 +2472,29 @@ server <- function(input, output, session) {
   filtered_data_petani <- reactive({
     req(data_petani)
     
-    if (!is.null(input$lokasi_petani) && input$lokasi_petani != "") {
-      data_petani %>% filter(landscape == input$lokasi_petani)
-    } else {
-      data_petani
+    # Hitung umur dari tahun_lahir
+    df <- data_petani %>%
+      mutate(umur = year(Sys.Date()) - as.integer(tahun_lahir))
+    
+    # Ganti tahun_lahir dengan umur jika dipilih di pickerInput
+    kolom_pilihan <- input$kolom_petani
+    if ("tahun_lahir" %in% kolom_pilihan) {
+      kolom_pilihan[kolom_pilihan == "tahun_lahir"] <- "umur"
     }
+    
+    # Filter landscape jika ada
+    if (!is.null(input$lokasi_petani) && input$lokasi_petani != "") {
+      df <- df %>% filter(landscape %in% input$lokasi_petani)
+    }
+    
+    # Pilih kolom sesuai urutan user
+    if (!is.null(kolom_pilihan) && length(kolom_pilihan) > 0) {
+      df <- df[, kolom_pilihan, drop = FALSE]
+    }
+    
+    df
   })
+  
   
   ## Server:Petani:Tab Profile Petani: Konten Profile Petani ####
   output$konten_profile_petani <- renderUI({
@@ -2331,7 +2531,7 @@ server <- function(input, output, session) {
               card_header("Informasi Petani"),
               tags$p(tags$b("Jenis Produk:"), row$jenis_produk),
               tags$p(tags$b("Total Luas Lahan:"), row$total_luas_lahan_ha),
-              tags$p(tags$b("Tanggal Bergabung:"), row$tanggal_kesepahaman)
+              tags$p(tags$b("Tanggal Bergabung:"), row$tanggal_register)
             ),
             card(
               card_header("Informasi Administrasi"),
@@ -2347,11 +2547,19 @@ server <- function(input, output, session) {
         ),
         card(
           card_header("Informasi Lahan"),
-          reactableOutput("LahanPetani")
+          layout_columns(
+            col_widths = c(6, 6),
+            reactableOutput("LahanPetani"),
+            leafletOutput("mapLahanPetaniDetail", height = 400)   # 🔹 tambahkan peta
+          )
         ),
         navset_tab(
-          nav_panel(title = "Training", reactableOutput("tabelPetaniperModul")),
-          nav_panel(title = "Monitoring Adopsi", reactableOutput("tabelAdopsiModul"))
+          nav_panel(
+            title = "Training", 
+            reactableOutput("tabelPetaniperModul")),
+          nav_panel(
+            title = "Monitoring Adopsi", 
+            reactableOutput("tabelAdopsiModul"))
         ),
         br(),
         tags$div(
@@ -2381,7 +2589,20 @@ server <- function(input, output, session) {
                 cell = function(value) format(value, nsmall = 1),
                 align = "center",
                 minWidth = 100,
-                headerStyle = list(background = "#e0f8e3")
+                headerStyle = list(background = "#436d46")
+              ),
+              columns = list(
+                jenis_kelamin = colDef(filterable = TRUE),
+                landscape = colDef(filterable = TRUE),
+                pendidikan_terakhir = colDef(filterable = TRUE),
+                desa = colDef(filterable = TRUE),
+                id_petani = colDef(name = "ID Petani"),
+                id_register = colDef(name = "ID Register"),
+                olam_farmer_id = colDef(name = "OLAM Farmer ID"),
+                umur = colDef(
+                  cell = function(value) if (!is.na(value)) as.integer(value)
+                ),
+                id_petani = colDef(show = FALSE)
               ),
               highlight = TRUE,
               defaultPageSize = 15,
@@ -2397,11 +2618,15 @@ server <- function(input, output, session) {
   ### Server:Petani:Tab Profile Petani: klik row di tabel petani ####
   observeEvent(input$tabel_petani__reactable__selected, {
     idx <- input$tabel_petani__reactable__selected
-    if (length(idx) > 0) {
-      petani_terpilih(filtered_data_petani()[idx, ])  # Gunakan data hasil filter
+    df <- filtered_data_petani()
+    
+    if (length(idx) > 0 && idx <= nrow(df)) {
+      id_terpilih <- df$id_petani[idx]
+      petani_terpilih(df %>% filter(id_petani == id_terpilih))
       mode("card")
     }
   })
+  
   
   ### Server:Petani:Tab Profile Petani:klik button "kembali" di tab petani ####
   observeEvent(input$kembali, {
@@ -2414,10 +2639,14 @@ server <- function(input, output, session) {
     
     id_terpilih <- petani_terpilih()$id_petani
     
+    # Detail data petani per modul training
     data_petani_training_per_modul %>%
       filter(id_petani == id_terpilih) %>%
-      select(starts_with("modul_")) %>%  # hanya kolom modul_1 sampai modul_11
-      pivot_longer(cols = everything(), names_to = "Modul", values_to = "Jumlah Pelatihan") %>%
+      mutate(Modul = paste("Modul", modul_training)) %>%
+      group_by(Modul, modul_training) %>%   # simpan angka modul biar bisa urut
+      summarise(`Jumlah Pelatihan` = n(), .groups = "drop") %>%
+      arrange(modul_training) %>%            # urut berdasarkan angka modul
+      select(-modul_training) %>%            # hapus kolom angka kalau tak perlu
       reactable(
         columns = list(
           Modul = colDef(name = "Modul"),
@@ -2427,16 +2656,9 @@ server <- function(input, output, session) {
         highlight = TRUE,
         striped = TRUE,
         defaultColDef = colDef(
-          header = function(value) {
-            # Ganti "_" dengan spasi dan ubah ke Title Case (kapital di awal setiap kata)
-            value <- gsub("_", " ", value, fixed = TRUE)
-            s <- strsplit(value, " ")[[1]]
-            paste(toupper(substring(s, 1, 1)), tolower(substring(s, 2)), sep = "", collapse = " ")
-          },
-          cell = function(value) format(value, nsmall = 1),
           align = "center",
-          minWidth = 100,
-          headerStyle = list(background = "#e0f8e3")
+          minWidth = 120,
+          headerStyle = list(background = "#436d46")
         )
       )
   })
@@ -2447,6 +2669,7 @@ server <- function(input, output, session) {
     
     id_terpilih <- petani_terpilih()$id_petani
     
+    # Data Lahan Petani
     data_petani_lahan <- data_lahan_petani %>%
       filter(id_petani == id_terpilih)
     
@@ -2473,10 +2696,65 @@ server <- function(input, output, session) {
         cell = function(value) format(value, nsmall = 1),
         align = "center",
         minWidth = 100,
-        headerStyle = list(background = "#e0f8e3")
+        headerStyle = list(background = "#436d46")
       )
     )
   })
+  
+  ### Server:Petani:Tab Profile Petani : Peta Lahan Petani ----
+  output$mapLahanPetaniDetail <- renderLeaflet({
+    req(petani_terpilih())
+    id_terpilih <- petani_terpilih()$id_petani
+    
+    data_petani_lahan <- data_lahan_petani %>%
+      filter(id_petani == id_terpilih)
+    
+    leaflet() %>%
+      addProviderTiles("CartoDB.Positron") -> map_base
+    
+    # Polygon (cast ke MULTIPOLYGON dulu)
+    if ("geom_polygon_lahan" %in% names(data_petani_lahan) &&
+        any(!is.na(data_petani_lahan$geom_polygon_lahan))) {
+      
+      poly_sf <- st_sf(
+        data_petani_lahan,
+        geometry = st_cast(st_as_sfc(data_petani_lahan$geom_polygon_lahan, crs = 4326), "MULTIPOLYGON")
+      )
+      
+      map_base <- map_base %>%
+        addPolygons(
+          data = poly_sf,
+          color = "#1f78b4", weight = 2, fillOpacity = 0.4,
+          popup = ~paste0("<b>ID Lahan: </b>", id_lahan,
+                          "<br><b>Luas: </b>", luas_lahan_ha, " ha",
+                          "<br><b>Desa: </b>", desa)
+        )
+    }
+    
+    # Point (cast ke POINT)
+    if ("geom_point_lahan" %in% names(data_petani_lahan) &&
+        any(!is.na(data_petani_lahan$geom_point_lahan))) {
+      
+      point_sf <- st_sf(
+        data_petani_lahan,
+        geometry = st_cast(st_as_sfc(data_petani_lahan$geom_point_lahan, crs = 4326), "POINT")
+      )
+      
+      map_base <- map_base %>%
+        addCircleMarkers(
+          data = point_sf,
+          radius = 5, color = "#e31a1c", fillOpacity = 0.9,
+          popup = ~paste0("<b>ID Lahan: </b>", id_lahan,
+                          "<br><b>Luas: </b>", luas_lahan_ha, " ha",
+                          "<br><b>Desa: </b>", desa)
+        )
+    }
+    
+    map_base
+  })
+  
+  
+  
   
   ### Server:Petani:Tab Profile Petani: Tabel Modul Adopsi ----
   output$tabelAdopsiModul <- renderReactable({
@@ -2486,12 +2764,16 @@ server <- function(input, output, session) {
     
     data_petani_adopsi_per_modul %>%
       filter(id_petani == id_terpilih) %>%
-      select(starts_with("modul_")) %>%  # ambil kolom modul_1 sampai modul_11
-      pivot_longer(cols = everything(), names_to = "Modul", values_to = "Jumlah Adopsi") %>%
+      mutate(Modul = paste("Modul", modul_adopsi)) %>%
+      group_by(Modul, modul_adopsi) %>%   # simpan angka modul biar bisa urut
+      summarise(`Jumlah Adopsi` = n(), .groups = "drop") %>%
+      arrange(modul_adopsi) %>%            # urut berdasarkan angka modul
+      select(-modul_adopsi) %>%            # hapus kolom angka kalau tak perlu
       reactable(
         columns = list(
           Modul = colDef(name = "Modul"),
-          `Jumlah Adopsi` = colDef(name = "Jumlah Adopsi")
+          `Jumlah Adopsi` = colDef(name = "Jumlah Adopsi"),
+          id_lahan = colDef(name = "ID Lahan")
         ),
         striped = TRUE,
         highlight = TRUE,
@@ -2506,44 +2788,295 @@ server <- function(input, output, session) {
           cell = function(value) format(value, nsmall = 1),
           align = "center",
           minWidth = 100,
-          headerStyle = list(background = "#e0f8e3")
+          headerStyle = list(background = "#436d46")
         )
       )
   })
+  
+  ## Server:Petani:Tab Kegiatan:Konten Utama ####
+  mode_kegiatan <- reactiveVal("tabel_kegiatan_training") # default: tampil tabel 
+  kegiatan_training_terpilih <- reactiveVal(NULL) # simpan id 
+  training_terpilih <- reactiveVal(NULL)
   
   ## Server:Petani:Tab Kegiatan:Sidebar: Tabel Kegiatan ####
   filtered_data_kegiatan_training_gap <- reactive({
     req(data_kegiatan_training_gap)
     
-    data_kegiatan_training_gap %>%
+    df <- data_kegiatan_training_gap %>%
       filter(
-        if (!is.null(input$lokasi_kegiatanGAP) && input$lokasi_kegiatanGAP != "") landscape == input$lokasi_kegiatanGAP else TRUE,
-        if (!is.null(input$periode_kegiatanGAP)) as.Date(tanggal_kegiatan) >= input$periode_kegiatanGAP[1] else TRUE,
-        if (!is.null(input$periode_kegiatanGAP)) as.Date(tanggal_kegiatan) <= input$periode_kegiatanGAP[2] else TRUE
+        # Landscape multi-select
+        landscape %in% (input$lokasi_kegiatanGAP %||% unique(data_kegiatan_training_gap$landscape)),
+        
+        # Jenis Training multi-select
+        jenis_training %in% (input$jenis_training_gap %||% unique(data_kegiatan_training_gap$jenis_training)),
+        
+        # Periode
+        as.Date(tanggal_kegiatan) >= (input$periode_kegiatanGAP[1] %||% min(as.Date(data_kegiatan_training_gap$tanggal_kegiatan))),
+        as.Date(tanggal_kegiatan) <= (input$periode_kegiatanGAP[2] %||% max(as.Date(data_kegiatan_training_gap$tanggal_kegiatan)))
       )
+    
+    df
   })
+  
+  ## Server:Petani:Tab Kegiatan : Main Content ####
+  output$konten_kegiatan <- renderUI({
+    if (mode_kegiatan() == "tabel_kegiatan_training") {
+      reactableOutput("tabel_kegiatan_gap")
+    } else  {
+      row <- filtered_data_kegiatan_training_gap() %>%
+        filter(id_kegiatan_training == kegiatan_training_terpilih())
+      
+      layout_columns(
+        col_widths = c(12),
+        reactableOutput("tabel_peserta_training"),
+        br(),
+        tags$div(
+          class = "get-started-button",
+          onclick = "Shiny.setInputValue('kembaliKegiatan', Math.random())",
+          tags$span("⬅️ Kembali", class = "get-started-text")
+        )
+      )
+    }
+  })
+  
   
   ## Server:Petani:Tab Kegiatan: Tabel Kegiatan ----
   output$tabel_kegiatan_gap <- renderReactable({
-    reactable(filtered_data_kegiatan_training_gap(),
-              defaultColDef = colDef(
-                header = function(value) {
-                  # Ganti "_" dengan spasi dan ubah ke Title Case (kapital di awal setiap kata)
-                  value <- gsub("_", " ", value, fixed = TRUE)
-                  s <- strsplit(value, " ")[[1]]
-                  paste(toupper(substring(s, 1, 1)), tolower(substring(s, 2)), sep = "", collapse = " ")
-                },
-                cell = function(value) format(value, nsmall = 1),
-                align = "center",
-                minWidth = 100,
-                headerStyle = list(background = "#e0f8e3")
-              ),
-              highlight = TRUE,
-              selection = "single",
-              onClick = "select",
-              columns = list(
-                id_kegiatan_training = colDef(show = FALSE)
-              )
+    df <- filtered_data_kegiatan_training_gap()
+    
+    kolom_dipilih <- input$kolom_kegiatan %||% names(df)
+    
+    df <- df %>% select(any_of(c("id_kegiatan_training", "id_training", kolom_dipilih)))
+    
+    reactable(
+      df,
+      defaultColDef = colDef(
+        header = function(value) {
+          value <- gsub("_", " ", value, fixed = TRUE)
+          s <- strsplit(value, " ")[[1]]
+          paste(toupper(substring(s, 1, 1)),
+                tolower(substring(s, 2)),
+                sep = "", collapse = " ")
+        },
+        align = "center",
+        minWidth = 100,
+        headerStyle = list(background = "#436d46")
+      ),
+      highlight = TRUE,
+      bordered = TRUE,
+      striped = TRUE,
+      paginationType = "jump",
+      searchable = TRUE,
+      selection = "single"
+    )
+  })
+  
+  ## Server:Petani:Tab Kegiatan: Tabel Peserta ----
+  output$tabel_peserta_training <- renderReactable({
+    req(training_terpilih())
+    
+    data_peserta_training_gap %>%
+      filter(id_training == training_terpilih()) %>%
+      select(nama_petani, jenis_kelamin, desa, nomor_handphone) %>%
+      reactable(
+        columns = list(
+          nama_petani    = colDef(name = "Nama Peserta"),
+          jenis_kelamin   = colDef(name = "Jenis Kelamin"),
+          desa            = colDef(name = "Desa"),
+          nomor_handphone = colDef(name = "No. HP")
+        ),
+        defaultColDef = colDef(
+          header = function(value) {
+            value <- gsub("_", " ", value, fixed = TRUE)
+            s <- strsplit(value, " ")[[1]]
+            paste(toupper(substring(s, 1, 1)),
+                  tolower(substring(s, 2)),
+                  sep = "", collapse = " ")
+          },
+          align = "center",
+          minWidth = 100,
+          headerStyle = list(background = "#436d46")
+        ),
+        highlight = TRUE,
+        bordered = TRUE,
+        striped = TRUE,
+        defaultPageSize = 10
+      )
+  })
+  
+  observeEvent(input$tabel_kegiatan_gap__reactable__selected, {
+    idx <- input$tabel_kegiatan_gap__reactable__selected
+    if (!is.null(idx) && length(idx) > 0) {
+      kegiatan_row <- filtered_data_kegiatan_training_gap()[idx, ]
+      kegiatan_training_terpilih(kegiatan_row$id_kegiatan_training)
+      training_terpilih(kegiatan_row$id_training)
+      mode_kegiatan("detail")
+    }
+  })
+  
+  observeEvent(input$kembaliKegiatan, {
+    mode_kegiatan("tabel_kegiatan_training")   # atau "tabel_kegiatan_training" kalau kamu konsisten pakai itu
+  })
+  
+  
+  ## Server:Petani:Dashboard:Tabel:Detail Petani Adopsi ----
+  output$tabelPetaniAdopsi <- renderReactable({
+    
+    req(data_petani_adopsi_per_modul)
+    
+    data_tabel <- data_petani_adopsi_per_modul %>%
+      mutate(value = 1) %>%   # kasih indikator, misalnya 1 kalau modul ada
+      tidyr::pivot_wider(
+        names_from = modul_adopsi,
+        values_from = value,
+        values_fill = list(value = 0),
+        names_prefix = "Modul "
+      ) %>%
+      dplyr::rename(
+        Landscape = landscape,
+        `Nama Petani` = nama_petani,
+        `Jenis Kelamin` = jenis_kelamin,
+        Resor = resort,
+        Provinsi = provinsi,
+        `Kabupaten/Kota` = kabupaten_kota,
+        Kecamatan = kecamatan,
+        Desa = desa,
+        Dusun = dusun
+      ) %>%
+      # ⬇️ Tambahkan filter Landscape dari input
+      filter(Landscape %in% input$landscapePetaniAdopsi %||% Landscape) %>%
+      select(
+        Landscape,
+        `Nama Petani`,
+        `Jenis Kelamin`,
+        Resor,
+        Provinsi,
+        `Kabupaten/Kota`,
+        Kecamatan,
+        Desa,
+        Dusun,
+        `Modul 1`,
+        `Modul 2`,
+        `Modul 3`,
+        `Modul 4`,
+        `Modul 5`,
+        `Modul 6`
+      )  
+    
+    reactable(
+      data_tabel,
+      columnGroups = list(
+        colGroup(
+          name = "Detail Lokasi Lahan", 
+          columns = c("Resor","Provinsi","Kabupaten/Kota","Kecamatan","Desa","Dusun"),
+          headerStyle = list(background = "#436d46")),
+        colGroup(
+          name = "Modul Gap", 
+          columns = c("Modul 1","Modul 2","Modul 3","Modul 4","Modul 5","Modul 6"),
+          headerStyle = list(background = "#436d46"))
+      ),
+      defaultColDef = colDef(
+        align = "center",
+        minWidth = 100,
+        headerStyle = list(background = "#436d46")),
+      columns = list(
+        `Modul 1` = colDef(
+          cell = function(value) ifelse(value == 1, "✔️", "❌"), 
+          header = function(value) {
+            htmltools::div(
+              title = "Modul 1: Pengenalan GAP dan prinsip dasar budidaya",
+              value
+            )
+          },
+          align = "center"),
+        `Modul 2` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 3` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 4` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 5` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 6` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center")
+      ),
+      defaultPageSize = 10,
+      bordered = TRUE,
+      highlight = TRUE
+    )
+  })
+  
+  
+  ## Server:Petani:Dashboard:Tabel:Detail Petani Terlatih ----
+  output$tabelPetaniTerlatih <- renderReactable({
+    
+    req(data_petani_training_per_modul)
+    
+    data_tabel_training <- data_petani_training_per_modul %>%
+      filter(!is.na(modul_training)) %>%   # buang NA
+      mutate(value = 1) %>%
+      pivot_wider(
+        names_from = modul_training,
+        values_from = value,
+        values_fill = list(value = 0),
+        names_prefix = "Modul "
+      ) %>%
+      group_by(
+        id_petani,
+        nama_petani,
+        jenis_kelamin,
+        tahun_lahir,
+        landscape
+      ) %>%
+      summarise(across(starts_with("Modul "), ~ max(.x, na.rm = TRUE)), .groups = "drop") %>%
+      mutate(Umur = year(Sys.Date()) - tahun_lahir) %>%   # 🔹 hitung umur
+      rename(
+        `Landscape` = landscape,
+        `Nama Petani` = nama_petani,
+        `Jenis Kelamin` = jenis_kelamin
+      ) %>%
+      filter(`Landscape` %in% (input$landscapePetaniTerlatih %||% unique(`Landscape`))) %>%
+      select(
+        `Landscape`,
+        `Nama Petani`,
+        `Jenis Kelamin`,
+        Umur,   # 🔹 ganti Tahun Lahir → Umur
+        `Modul 1`, `Modul 2`, `Modul 3`, `Modul 4`, `Modul 5`,
+        `Modul 6`, `Modul 7`, `Modul 8`, `Modul 9`, `Modul 10`, `Modul 11`
+      )
+    
+    
+    reactable(
+      data_tabel_training,
+      columnGroups = list(
+        colGroup(
+          name = "Modul Gap", 
+          columns = c("Modul 1","Modul 2","Modul 3","Modul 4","Modul 5","Modul 6"),
+          headerStyle = list(background = "#436d46"))
+      ),
+      defaultColDef = colDef(
+        align = "center",
+        minWidth = 100,
+        headerStyle = list(background = "#436d46")),
+      columns = list(
+        `Modul 1` = colDef(
+          cell = function(value) ifelse(value == 1, "✔️", "❌"), 
+          header = function(value) {
+            htmltools::div(
+              title = "Modul 1: Pengenalan GAP dan prinsip dasar budidaya",
+              value
+            )
+          },
+          align = "center"),
+        `Modul 2` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 3` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 4` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 5` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 6` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 7` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 8` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 9` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 10` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center"),
+        `Modul 11` = colDef(cell = function(value) ifelse(value == 1, "✔️", "❌"), align = "center")
+      ),
+      defaultPageSize = 10,
+      bordered = TRUE,
+      highlight = TRUE
     )
   })
   
@@ -3374,8 +3907,8 @@ server <- function(input, output, session) {
       }
     }
   })
-  
-  
 }
+
+
 
 
